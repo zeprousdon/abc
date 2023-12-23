@@ -1,0 +1,89 @@
+import csv
+import random
+import math
+def loadcsv(filename):
+    dataset = list(csv.reader(open(filename,"r")))
+    for i in range(len(dataset)):
+        dataset[i] = [float(x) for x in dataset[i]]
+    return dataset
+
+def splitDataset(dataset, splitRatio):
+    trainSize = int(len(dataset)* splitRatio)
+    trainSet = []
+    copy = list(dataset)
+    while len(trainSet)<trainSize:
+        index = random.randrange(len(copy))
+        trainSet.append(copy.pop(index))
+    return [trainSet,copy]
+
+def mean(numbers):
+    return sum(numbers)/(len(numbers))
+
+def stdev(numbers):
+    avg = mean(numbers)
+    v=0
+    for x in numbers:
+        v+=(x-avg)**2
+    return math.sqrt(v/(len(numbers)-1))
+
+def summarizeByClass(dataset):
+    seperated = {}
+    for i in range(len(dataset)):
+        vector = dataset[i]
+        if(vector[-1] not in seperated):
+            seperated[vector[-1]] = []
+        seperated[vector[-1]].append(vector)
+    summaries = {}
+    for classValue, instances in seperated.items():
+        summaries[classValue] = [(mean(attribute),stdev(attribute)) for attribute in zip(*instances)][:-1]
+    return summaries
+
+def calculateProbability(x,mean,stdev):
+    exponent = math.exp((-(x-mean)**2)/(2*(stdev**2)))
+    return (1/math.sqrt(2*math.pi*(stdev**2))) * exponent
+
+def predict(summaries, inputvector):
+    probabilities = {}
+    for classValue, classSummaries  in summaries.items():
+        probabilities[classValue] = 1
+        for i in range(len(classSummaries)):
+            mean, stdev = classSummaries[i]
+            x  = inputvector[i]
+            probabilities[classValue] *= calculateProbability(x,mean,stdev)
+    bestlabel,bestProb = None,-1
+    for classValue, probability in probabilities.items():
+        if bestlabel is None or probability>bestProb:
+            bestProb = probability
+            bestlabel = classValue
+    return bestlabel
+
+def getPredection(summaries, testSet):
+    predictions = []
+    for i in range(len(testSet)):
+        result = predict(summaries,testSet[i])
+        predictions.append(result)
+    return predictions
+
+def getAccuacy(testSet,predictions):
+    correct=0
+    for i in range(len(testSet)):
+        if testSet[i][-1]==predictions[i]:
+            correct +=1
+    return (correct/float(len(testSet)))*100.0
+
+filename='diabetes.csv'
+splitRatio=0.9
+dataset=loadcsv(filename)
+print("\n The length of the dataset:",len(dataset))
+print("\n The Data set splitting into training and testing\n")    
+trainingSet,testSet=splitDataset(dataset,splitRatio)
+print("\n Number of rows in training set:{0} rows".format(len(trainingSet)))    
+print("\n Number of rows in Testing set:{0} rows".format(len(testSet)))
+
+summaries=summarizeByClass(trainingSet)
+print("\n Model Summaries:\n",summaries)
+predictions=getPredictions(summaries,testSet)
+print("\n Model Summaries:\n",predictions)
+accuracy=getAccuacy(testSet,predictions)
+
+print("\n Accuracy:{0}%".format(accuracy))
