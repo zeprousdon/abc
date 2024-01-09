@@ -2,16 +2,13 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
-# Load data
-data = pd.read_csv('bill.csv')
+data = pd.read_csv('Tips.csv')
 bill = np.array(data.total_bill)
 tip = np.array(data.tip)
 
-# Prepare data
 X = np.vstack((np.ones_like(bill), bill)).T
 m = len(X)
 
-# Local Weight Regression
 def localWeight(point, xmat, ymat, k):
     weights = np.diag(np.exp(np.sum((xmat - point) ** 2, axis=1) / (-2.0 * k ** 2)))
     W = np.linalg.inv(xmat.T @ weights @ xmat) @ xmat.T @ weights @ ymat.T
@@ -25,7 +22,6 @@ def localWeightRegression(xmat, ymat, k):
 
 ypred = localWeightRegression(X, tip, 3)
 
-# Plotting
 sort_indices = X[:, 1].argsort()
 x_sorted = X[sort_indices][:, 1]
 
